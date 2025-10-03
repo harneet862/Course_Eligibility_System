@@ -1,1 +1,1 @@
-# Course_Eligibility_Sytem
+# Course_Eligibility_System
