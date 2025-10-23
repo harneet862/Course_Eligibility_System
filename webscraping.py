@@ -1,13 +1,3 @@
-"""
-UAlberta Course Catalogue Prerequisite Scraper
-
-This script scrapes course information including prerequisites and corequisites
-from the University of Alberta course catalogue website.
-
-Author: [Your Name]
-Date: October 2025
-"""
-
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
