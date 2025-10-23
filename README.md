@@ -18,6 +18,6 @@ It parses course prerequisite data, builds a dependency graph, and uses topologi
 
 📂 Project Structure
 .
-├── prereq_engine.py     # Main script with parser, graph builder, and eligibility logic
-├── prereq.txt           # Input file containing course prerequisites
-└── README.md            # Project documentation
+├── eligibility_check.py     # Main script with parser, graph builder, and eligibility logic
+├── prereq.txt               # Input file containing course prerequisites
+└── README.md                # Project documentation
