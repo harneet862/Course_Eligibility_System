@@ -4,17 +4,17 @@ This project automates the process of determining which university courses a stu
 
 It parses course prerequisite data, builds a dependency graph, and uses topological sorting to compute valid course orderings. The system can handle messy prerequisite text (like “one of A or B” and “A and B”) and even supports automated scraping of course data using Beautiful Soup.
 
-🚀 Features
+# Features
 
-Automated Parsing: Extracts course prerequisite relationships from a text file or website.
+- Automated Parsing: Extracts course prerequisite relationships from a text file or website.
 
-Dependency Graph Construction: Builds a directed graph representing course dependencies.
+- Dependency Graph Construction: Builds a directed graph representing course dependencies.
 
-Topological Sorting: Computes valid course sequences and detects cycles.
+- Topological Sorting: Computes valid course sequences and detects cycles.
 
-Eligibility Checking: Determines which courses a student can take based on their completed courses.
+- Eligibility Checking: Determines which courses a student can take based on their completed courses.
 
-Web Scraping Template: Includes a BeautifulSoup-based scraper for automatically gathering course data.
+- Web Scraping Template: Includes a BeautifulSoup-based scraper for automatically gathering course data.
 
 📂 Project Structure
 .
