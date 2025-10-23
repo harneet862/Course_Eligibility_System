@@ -16,8 +16,9 @@ It parses course prerequisite data, builds a dependency graph, and uses topologi
 
 - Web Scraping Template: Includes a BeautifulSoup-based scraper for automatically gathering course data.
 
-📂 Project Structure
-.
+# Project Structure
+```
 ├── eligibility_check.py     # Main script with parser, graph builder, and eligibility logic
 ├── prereq.txt               # Input file containing course prerequisites
 └── README.md                # Project documentation
+```
