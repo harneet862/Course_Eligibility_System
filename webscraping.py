@@ -1,7 +1,18 @@
+"""
+UAlberta Course Catalogue Prerequisite Scraper
+
+This script scrapes course information including prerequisites and corequisites
+from the University of Alberta course catalogue website.
+
+Author: [Your Name]
+Date: October 2025
+"""
+
 import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from collections import defaultdict
+import json
 
 
 def get_faculties(base_url):
@@ -128,43 +139,128 @@ def coreq_finder(paragraph_tag):
     return txt[index + start_offset:]
 
 
-def scrape_course_info(course_url):
+def scrape_all_courses(fac_courses):
     """
-    Scrape detailed information for a specific course.
+    Scrape all courses with their prerequisites and corequisites.
     
     Args:
-        course_url (str): URL of the course page
+        fac_courses (dict): Dictionary mapping faculty names to course URLs
         
     Returns:
-        dict: Dictionary containing course information
+        dict: Nested dictionary structure with all course information
+              Format: {'Faculty': {'Department': {'COURSE 123': {'prereq': '...', 'coreq': '...'}}}}
     """
-    r = requests.get(course_url)
-    soup = BeautifulSoup(r.content, 'html.parser')
+    cors = {}  # Structure: {'Faculty': {'Department': {'COURSE 123': {'prereq': '...', 'coreq': '...'}}}}
     
-    course_info = {
-        'url': course_url,
-        'prerequisites': None,
-        'corequisites': None
-    }
+    # Initialize faculty structure
+    for faculty in fac_courses:
+        cors[faculty] = {}
     
-    # Find course description paragraphs
-    for p in soup.find_all('p'):
-        prereq = prereq_finder(p)
-        if prereq != -1:
-            course_info['prerequisites'] = prereq
+    # Process each faculty's courses
+    for faculty_name, course_urls in fac_courses.items():
+        print(f"\nProcessing {faculty_name}...")
         
-        coreq = coreq_finder(p)
-        if coreq != -1:
-            course_info['corequisites'] = coreq
+        for url in course_urls:
+            try:
+                r = requests.get(url)
+                soup = BeautifulSoup(r.content, 'html.parser')
+                
+                # Get department name
+                content_div = soup.find('div', class_='content')
+                if content_div:
+                    container_div = content_div.find('div', class_='container')
+                    if container_div:
+                        dept_heading = container_div.find('h1')
+                        if dept_heading:
+                            dept_name = dept_heading.text
+                        else:
+                            dept_name = "Unknown Department"
+                    else:
+                        dept_name = "Unknown Department"
+                else:
+                    dept_name = "Unknown Department"
+                
+                # Initialize department if not exists
+                if dept_name not in cors[faculty_name]:
+                    cors[faculty_name][dept_name] = {}
+                
+                # Find all course elements
+                course_elements = soup.find_all('div', class_=["course", "course ms-3"])
+                
+                for course_elem in course_elements:
+                    # Extract course code
+                    course_link = course_elem.find('a')
+                    if course_link:
+                        course_text = course_link.text
+                        ind = course_text.find('-')
+                        if ind != -1:
+                            course_code = course_text[:ind-1].strip()
+                        else:
+                            course_code = course_text.strip()
+                        
+                        # Extract prerequisites and corequisites
+                        course_para = course_elem.find('p')
+                        prereq = -1
+                        coreq = -1
+                        
+                        if course_para:
+                            prereq = prereq_finder(course_para)
+                            coreq = coreq_finder(course_para)
+                        
+                        # Store course information
+                        cors[faculty_name][dept_name][course_code] = {
+                            'prereq': prereq if prereq != -1 else None,
+                            'coreq': coreq if coreq != -1 else None
+                        }
+                        
+                        # Print courses with prerequisites
+                        if prereq != -1:
+                            print(f"{course_code}: {prereq}")
+                
+            except Exception as e:
+                print(f"Error processing {url}: {e}")
+                continue
     
-    return course_info
+    return cors
+
+
+def save_to_file(cors, filename='course_prerequisites.json'):
+    """
+    Save the course structure to a JSON file.
+    
+    Args:
+        cors (dict): Course data structure
+        filename (str): Output filename
+    """
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(cors, f, indent=2, ensure_ascii=False)
+    print(f"\nData saved to {filename}")
+
+
+def save_prereqs_to_txt(cors, filename='prereq.txt'):
+    """
+    Save all prerequisites to a text file.
+    
+    Args:
+        cors (dict): Course data structure
+        filename (str): Output filename
+    """
+    with open(filename, 'w', encoding='utf-8') as f:
+        for faculty, departments in cors.items():
+            for dept, courses in departments.items():
+                for course_code, info in courses.items():
+                    if info['prereq']:
+                        f.write(f"{course_code}: {info['prereq']}\n")
+    print(f"Prerequisites saved to {filename}")
 
 
 def main():
     """Main function to orchestrate the scraping process."""
     base_url = "https://apps.ualberta.ca/catalogue"
     
-    print("Scraping UAlberta Course Catalogue...")
+    print("=" * 60)
+    print("UAlberta Course Catalogue Scraper")
+    print("=" * 60)
     print(f"Base URL: {base_url}\n")
     
     # Step 1: Get all faculties
@@ -179,21 +275,31 @@ def main():
     total_courses = sum(len(courses) for courses in fac_courses.values())
     print(f"Found {total_courses} total courses across {len(fac_courses)} faculties\n")
     
-    # Step 3: Example - scrape first course from first faculty
-    print("Step 3: Example - scraping course information...")
-    for faculty_name, courses in fac_courses.items():
-        if courses:
-            print(f"\nFaculty: {faculty_name}")
-            print(f"Number of courses: {len(courses)}")
-            
-            # Scrape first course as example
-            example_course = scrape_course_info(courses[0])
-            print(f"Example course: {example_course['url']}")
-            print(f"Prerequisites: {example_course['prerequisites']}")
-            print(f"Corequisites: {example_course['corequisites']}")
-            break
+    # Step 3: Scrape all courses with prerequisites and corequisites
+    print("Step 3: Scraping all course information...")
+    print("=" * 60)
+    cors = scrape_all_courses(fac_courses)
     
-    return fac_courses
+    # Step 4: Save results
+    print("\n" + "=" * 60)
+    print("Step 4: Saving results...")
+    save_to_file(cors)
+    save_prereqs_to_txt(cors)
+    
+    # Print summary
+    print("\n" + "=" * 60)
+    print("Summary:")
+    print("=" * 60)
+    for faculty, departments in cors.items():
+        total_dept_courses = sum(len(courses) for courses in departments.values())
+        courses_with_prereqs = sum(
+            1 for dept in departments.values() 
+            for course in dept.values() 
+            if course['prereq']
+        )
+        print(f"{faculty}: {total_dept_courses} courses, {courses_with_prereqs} with prerequisites")
+    
+    return cors
 
 
 if __name__ == "__main__":
